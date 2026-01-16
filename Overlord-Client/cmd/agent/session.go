@@ -88,7 +88,6 @@ func runClient(cfg config.Config) {
 			}
 
 			time.Sleep(backoff)
-			backoff = rt.MinDuration(backoff*2, 30*time.Second)
 			cancel()
 			continue
 		}
@@ -113,7 +112,6 @@ func runClient(cfg config.Config) {
 		}
 
 		time.Sleep(backoff)
-		backoff = rt.MinDuration(backoff*2, 30*time.Second)
 	}
 }
 
@@ -159,14 +157,8 @@ func createHTTPTransport(cfg config.Config) *http.Transport {
 
 func computeBaseBackoff() time.Duration {
 	mode := strings.ToLower(strings.TrimSpace(os.Getenv("OVERLORD_MODE")))
-	switch mode {
-	case "dev", "development", "local":
-		return time.Second
-	case "release", "prod", "production":
-		return 5 * time.Second
-	default:
-		return 5 * time.Second
-	}
+	_ = mode
+	return 10 * time.Second
 }
 
 func runSession(ctx context.Context, cancel context.CancelFunc, conn *websocket.Conn, cfg config.Config) (err error) {
