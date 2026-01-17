@@ -32,6 +32,17 @@ func HandleFileList(ctx context.Context, env *agentRuntime.Env, cmdID string, pa
 		return listWindowsDrives(ctx, env, cmdID)
 	}
 
+	if path == "." && runtime.GOOS != "windows" {
+		if homeDir, err := os.UserHomeDir(); err == nil {
+			path = homeDir
+		}
+	}
+
+	absPath, err := filepath.Abs(path)
+	if err == nil {
+		path = absPath
+	}
+
 	entries := []wire.FileEntry{}
 	var errMsg string
 
