@@ -124,6 +124,10 @@ export function setOnlineState(id: string, online: boolean) {
   );
 }
 
+export function deleteClientRow(id: string) {
+  db.run(`DELETE FROM clients WHERE id=?`, id);
+}
+
 export function markAllClientsOffline() {
   db.run(`UPDATE clients SET online=0`);
   console.log("[db] marked all clients as offline");

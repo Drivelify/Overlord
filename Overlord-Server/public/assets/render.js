@@ -102,7 +102,7 @@ export function createRenderer({
     const mons = monitorsBadge(client.monitors);
     const deviceId = shortId(client.id);
     const hwid = shortId(client.hwid || "");
-    card.className = `card rounded-xl border border-slate-800 bg-slate-900/70 p-4 shadow-lg ${client.online ? "" : "opacity-70"} tone-${os.tone}`;
+    card.className = `card rounded-xl border border-slate-800 bg-slate-900/70 p-4 shadow-lg ${client.online ? "" : "card-offline"} tone-${os.tone}`;
     const cardThumb = client.thumbnail
       ? (() => {
           const wrapper = document.createElement("div");
@@ -164,7 +164,12 @@ export function createRenderer({
 
     const checkbox = card.querySelector(".client-checkbox");
     if (checkbox) {
-      if (wasChecked && client.online) {
+      const isSelected =
+        typeof window.isClientSelected === "function"
+          ? window.isClientSelected(client.id)
+          : false;
+
+      if ((wasChecked || isSelected) && client.online) {
         checkbox.checked = true;
       }
 
@@ -191,6 +196,16 @@ export function createRenderer({
     card.onclick = (e) => {
       if (e.target.closest(".command-btn") || e.target.closest("button"))
         return;
+      if (e.target.closest(".client-checkbox")) return;
+      if (e.ctrlKey || e.metaKey || e.shiftKey) {
+        if (checkbox && !checkbox.disabled) {
+          checkbox.checked = !checkbox.checked;
+          if (window.toggleClientSelection) {
+            window.toggleClientSelection(client.id);
+          }
+        }
+        return;
+      }
       if (!client.online) return;
       requestPreview(client.id);
       requestThumbnail(client.id);

@@ -7,7 +7,7 @@ import { fileURLToPath } from "url";
 import path from "path";
 import fs from "fs/promises";
 import AdmZip from "adm-zip";
-import { upsertClientRow, setOnlineState, listClients, markAllClientsOffline, saveBuild, getBuild, getAllBuilds, deleteExpiredBuilds, deleteBuild, saveNotificationScreenshot, getNotificationScreenshot, clearNotificationScreenshots, type NotificationScreenshotRecord } from "./db";
+import { upsertClientRow, setOnlineState, listClients, markAllClientsOffline, saveBuild, getBuild, getAllBuilds, deleteExpiredBuilds, deleteBuild, saveNotificationScreenshot, getNotificationScreenshot, clearNotificationScreenshots, deleteClientRow, type NotificationScreenshotRecord } from "./db";
 import { handleFrame, handleHello, handlePing, handlePong } from "./wsHandlers";
 import { ClientInfo, ClientRole } from "./types";
 import { v4 as uuidv4 } from "uuid";
@@ -3178,6 +3178,7 @@ async function startServer() {
             } else if (action === "uninstall") {
               target.ws.send(encodeMessage({ type: "command", commandType: "uninstall", id: uuidv4() }));
               metrics.recordCommand("uninstall");
+              deleteClientRow(targetId);
               logAudit({
                 timestamp: Date.now(),
                 username: user.username,

@@ -20,6 +20,9 @@ const searchInput = document.getElementById("search");
 const sortSelect = document.getElementById("sort");
 const filterStatusSelect = document.getElementById("filter-status");
 const filterOsSelect = document.getElementById("filter-os");
+const showOfflineToggle = document.getElementById("toggle-offline");
+const selectAllBtn = document.getElementById("select-all");
+const clearSelectionBtn = document.getElementById("clear-selection");
 const logoutBtn = document.getElementById("logout-btn");
 const usernameDisplay = document.getElementById("username-display");
 const roleBadge = document.getElementById("role-badge");
@@ -30,8 +33,10 @@ const bulkToolbar = document.getElementById("bulk-toolbar");
 const selectedCountSpan = document.getElementById("selected-count");
 const bulkScreenshotBtn = document.getElementById("bulk-screenshot");
 const bulkDisconnectBtn = document.getElementById("bulk-disconnect");
+const bulkUninstallBtn = document.getElementById("bulk-uninstall");
 const bulkClearBtn = document.getElementById("bulk-clear");
 const selectedClients = new Set();
+let lastNonOnlineStatus = "all";
 
 let currentUser = null;
 let contextCard = null;
@@ -261,6 +266,12 @@ sortSelect?.addEventListener("change", (e) => {
 
 filterStatusSelect?.addEventListener("change", (e) => {
   state.filterStatus = e.target.value;
+  if (state.filterStatus === "online") {
+    if (showOfflineToggle) showOfflineToggle.checked = false;
+  } else {
+    lastNonOnlineStatus = state.filterStatus;
+    if (showOfflineToggle) showOfflineToggle.checked = true;
+  }
   state.page = 1;
   state.lastDigest = "";
   loadWithOptions({ force: true });
@@ -268,6 +279,23 @@ filterStatusSelect?.addEventListener("change", (e) => {
 
 filterOsSelect?.addEventListener("change", (e) => {
   state.filterOs = e.target.value;
+  state.page = 1;
+  state.lastDigest = "";
+  loadWithOptions({ force: true });
+});
+
+showOfflineToggle?.addEventListener("change", (e) => {
+  if (e.target.checked) {
+    state.filterStatus = lastNonOnlineStatus || "all";
+  } else {
+    if (state.filterStatus !== "online") {
+      lastNonOnlineStatus = state.filterStatus;
+    }
+    state.filterStatus = "online";
+  }
+  if (filterStatusSelect) {
+    filterStatusSelect.value = state.filterStatus;
+  }
   state.page = 1;
   state.lastDigest = "";
   loadWithOptions({ force: true });
@@ -296,11 +324,40 @@ function toggleClientSelection(clientId) {
   updateBulkToolbar();
 }
 
+function syncSelectionState() {
+  document.querySelectorAll(".client-checkbox").forEach((cb) => {
+    const id = cb.dataset.id;
+    if (!id) return;
+    cb.checked = selectedClients.has(id);
+  });
+  updateBulkToolbar();
+}
+
 bulkClearBtn?.addEventListener("click", () => {
   selectedClients.clear();
   document
     .querySelectorAll(".client-checkbox")
     .forEach((cb) => (cb.checked = false));
+  updateBulkToolbar();
+});
+
+clearSelectionBtn?.addEventListener("click", () => {
+  selectedClients.clear();
+  document
+    .querySelectorAll(".client-checkbox")
+    .forEach((cb) => (cb.checked = false));
+  updateBulkToolbar();
+});
+
+selectAllBtn?.addEventListener("click", () => {
+  document
+    .querySelectorAll(".client-checkbox:not(:disabled)")
+    .forEach((cb) => {
+      cb.checked = true;
+      if (cb.dataset.id) {
+        selectedClients.add(cb.dataset.id);
+      }
+    });
   updateBulkToolbar();
 });
 
@@ -345,7 +402,32 @@ bulkDisconnectBtn?.addEventListener("click", async () => {
   setTimeout(() => loadWithOptions({ force: true }), 1000);
 });
 
+bulkUninstallBtn?.addEventListener("click", async () => {
+  if (
+    !confirm(
+      `Uninstall agent from ${selectedClients.size} client(s)?\n\nThis will remove all persistence mechanisms and terminate the agents. This action cannot be undone.`,
+    )
+  )
+    return;
+
+  let success = 0;
+  for (const clientId of selectedClients) {
+    const ok = await sendCommand(clientId, "uninstall");
+    if (ok) success++;
+  }
+
+  alert(`Uninstall sent to ${success}/${selectedClients.size} clients`);
+  selectedClients.clear();
+  document
+    .querySelectorAll(".client-checkbox")
+    .forEach((cb) => (cb.checked = false));
+  updateBulkToolbar();
+  setTimeout(() => loadWithOptions({ force: true }), 1000);
+});
+
 window.toggleClientSelection = toggleClientSelection;
+window.isClientSelected = (clientId) => selectedClients.has(clientId);
+window.syncClientSelection = syncSelectionState;
 
 prevBtn?.addEventListener("click", () => {
   if (state.page > 1) {
