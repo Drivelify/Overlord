@@ -24,6 +24,7 @@ import * as sessionManager from "./sessions/sessionManager";
 import type { SocketData, ConsoleSession, RemoteDesktopViewer } from "./sessions/types";
 import * as buildManager from "./build/buildManager";
 import type { BuildStream, BuildConfig } from "./build/types";
+import { SERVER_VERSION } from "./version";
 
 
 const config = loadConfig();
@@ -897,7 +898,7 @@ async function startBuildProcess(
         id: config.customId || "",
         hwid: "",
         country: config.countryCode || "",
-        version: "0",
+        version: "1.0.0",
       };
       
       const configDir = `${clientDir}/config`;
@@ -2834,6 +2835,15 @@ async function startServer() {
 
       if (url.pathname === "/health") {
         return new Response("ok", { headers: CORS_HEADERS });
+      }
+
+      if (req.method === "GET" && url.pathname === "/api/version") {
+        return new Response(JSON.stringify({ version: SERVER_VERSION }), {
+          headers: {
+            ...CORS_HEADERS,
+            "Content-Type": "application/json",
+          },
+        });
       }
 
       
