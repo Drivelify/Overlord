@@ -3291,7 +3291,9 @@ async function startServer() {
         const pageSize = Math.max(1, Number(url.searchParams.get("pageSize") || 12));
         const search = (url.searchParams.get("q") || "").toLowerCase().trim();
         const sort = url.searchParams.get("sort") || "last_seen_desc";
-        const result = listClients({ page, pageSize, search, sort });
+        const statusFilter = url.searchParams.get("status") || "all";
+        const osFilter = url.searchParams.get("os") || "all";
+        const result = listClients({ page, pageSize, search, sort, statusFilter, osFilter });
         return Response.json(result, { headers: CORS_HEADERS });
       }
 

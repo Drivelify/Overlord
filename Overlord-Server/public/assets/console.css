@@ -5,9 +5,7 @@
     radial-gradient(120% 120% at 20% 20%, #0d1a2f 0%, transparent 45%),
     radial-gradient(110% 110% at 80% 0%, #0b1224 0%, transparent 50%), #03060f;
   color: #e8edf2;
-  font-family:
-    "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, "Liberation Mono",
-    monospace;
+  font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
   display: flex;
   flex-direction: column;
 }
@@ -109,7 +107,6 @@
   background: transparent;
   border: none;
   color: #e8edf2;
-  font-family: "JetBrains Mono", monospace;
   font-size: 14px;
   outline: none;
 }
