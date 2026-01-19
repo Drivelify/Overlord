@@ -131,7 +131,8 @@ export function createRenderer({
         <div class="flex-1 min-w-[240px] flex flex-col gap-2">
           <div class="flex items-center gap-3 flex-wrap text-lg font-semibold">
             <span class="text-2xl">${countryToFlag(client.country)}</span>
-            <span>${escapeHtml(client.host || deviceId)}</span>
+            <span>${escapeHtml(client.customName || client.host || deviceId)}</span>
+            ${client.customName ? `<span class="text-slate-500 text-xs font-mono">(${escapeHtml(client.host || deviceId)})</span>` : ""}
             <span class="text-slate-400 text-sm flex items-center gap-1"><i class="fa-solid fa-user"></i> ${escapeHtml(client.user || "unknown")}</span>
             <span class="pill ${client.online ? "pill-online" : "pill-offline"}">
               <i class="fa-solid fa-circle"></i>
