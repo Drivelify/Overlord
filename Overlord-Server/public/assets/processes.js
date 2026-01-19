@@ -23,6 +23,21 @@ if (clientIdHeader) {
   clientIdHeader.textContent = `${clientId} - Process Manager`;
 }
 
+async function fetchClientInfo() {
+  try {
+    const res = await fetch("/api/clients");
+    const data = await res.json();
+    const client = data.items.find((c) => c.id === clientId);
+    if (client && clientIdHeader) {
+      clientIdHeader.textContent = `${client.customName || client.host || client.id} - Process Manager`;
+    }
+  } catch (e) {
+    console.warn("failed to fetch client info", e);
+  }
+}
+
+fetchClientInfo();
+
 function connect() {
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
   const wsUrl = `${protocol}//${window.location.host}/api/clients/${clientId}/processes/ws`;
