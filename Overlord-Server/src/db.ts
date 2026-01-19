@@ -40,6 +40,9 @@ try {
 try {
   db.run(`ALTER TABLE clients ADD COLUMN ip TEXT`);
 } catch {}
+try {
+  db.run(`ALTER TABLE clients ADD COLUMN custom_name TEXT`);
+} catch {}
 
 db.run(`
   CREATE TABLE IF NOT EXISTS banned_ips (
@@ -173,6 +176,14 @@ export function deleteClientRow(id: string) {
   db.run(`DELETE FROM clients WHERE id=?`, id);
 }
 
+export function updateClientCustomName(id: string, customName: string | null) {
+  db.run(
+    `UPDATE clients SET custom_name=? WHERE id=?`,
+    customName,
+    id,
+  );
+}
+
 export function getClientIp(id: string): string | null {
   const row = db.query<{ ip: string }>(`SELECT ip FROM clients WHERE id=?`).get(id);
   return row?.ip || null;
@@ -252,7 +263,7 @@ export function listClients(filters: ListFilters): ListResult {
 
   const rows = db
     .query<any>(
-      `SELECT id, hwid, role, host, os, arch, version, user, monitors, country, last_seen as lastSeen, online, ping_ms as pingMs
+      `SELECT id, hwid, role, host, os, arch, version, user, monitors, country, last_seen as lastSeen, online, ping_ms as pingMs, custom_name as customName
        FROM clients
        ${whereSql}
        ${orderBy}
@@ -266,6 +277,7 @@ export function listClients(filters: ListFilters): ListResult {
     role: (c.role as ClientRole) || "client",
     lastSeen: Number(c.lastSeen) || 0,
     host: c.host,
+    customName: c.customName,
     os: c.os || "unknown",
     arch: c.arch || "arch?",
     version: c.version || "0",
