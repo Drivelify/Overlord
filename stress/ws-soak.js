@@ -4,6 +4,9 @@ import { sleep, check } from "k6";
 // Env-tunable ramp and endpoints so you can reuse this locally and on a VPS.
 const HOST = __ENV.HOST || "127.0.0.1";
 const PORT = __ENV.PORT || "5173";
+const SCHEME = __ENV.SCHEME || "wss";
+const AGENT_TOKEN = __ENV.AGENT_TOKEN || "";
+const TLS_INSECURE = __ENV.TLS_INSECURE === "1" || __ENV.TLS_INSECURE === "true";
 const ROLE = __ENV.ROLE || "viewer";
 const CLIENT_PREFIX = __ENV.CLIENT_PREFIX || "soak";
 const HEARTBEAT_MS = Number(__ENV.HEARTBEAT_MS || 15000);
@@ -35,17 +38,23 @@ export const options = {
     ws_msgs_sent: ["count>0"],
     checks: ["rate>0.99"],
   },
+  insecureSkipTLSVerify: TLS_INSECURE,
 };
 
 function buildUrl(clientId) {
-  return `ws://${HOST}:${PORT}/api/clients/${clientId}/stream/ws?role=${ROLE}`;
+  return `${SCHEME}://${HOST}:${PORT}/api/clients/${clientId}/stream/ws?role=${ROLE}`;
 }
 
 export default function () {
   const clientId = `${CLIENT_PREFIX}-${__VU}-${__ITER}`;
   const url = buildUrl(clientId);
 
-  const res = ws.connect(url, {}, (socket) => {
+  const params = {};
+  if (AGENT_TOKEN) {
+    params.headers = { "X-Agent-Token": AGENT_TOKEN };
+  }
+
+  const res = ws.connect(url, params, (socket) => {
     socket.on("open", () => {
       if (INCLUDE_HELLO) {
         socket.send(
