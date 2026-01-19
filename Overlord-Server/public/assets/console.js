@@ -128,6 +128,7 @@ function wireInput() {
 
   form.addEventListener("submit", (e) => {
     e.preventDefault();
+    e.stopPropagation();
     const value = input.value;
     if (!value.trim()) {
       input.value = "";
@@ -137,12 +138,23 @@ function wireInput() {
     sendInput(text);
     input.value = "";
     input.focus();
+    return false;
   });
 
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      form.dispatchEvent(new Event("submit"));
+      e.stopPropagation();
+      const value = input.value;
+      if (!value.trim()) {
+        input.value = "";
+        return false;
+      }
+      const text = value.endsWith("\n") ? value : `${value}\n`;
+      sendInput(text);
+      input.value = "";
+      input.focus();
+      return false;
     }
   });
 
