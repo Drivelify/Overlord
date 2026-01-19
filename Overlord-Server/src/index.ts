@@ -1299,6 +1299,7 @@ function handleConsoleViewerOpen(ws: ServerWebSocket<SocketData>) {
     clientId,
     clientOnline: !!target,
     host: target?.host || clientId,
+    customName: target?.customName,
     os: target?.os,
     user: target?.user,
   });
