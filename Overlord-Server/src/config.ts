@@ -75,14 +75,6 @@ function generateJwtSecret(): string {
   return secret;
 }
 
-function generateAgentToken(): string {
-  const array = new Uint8Array(32);
-  crypto.getRandomValues(array);
-  return Array.from(array)
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
 let configCache: Config | null = null;
 
 export function loadConfig(): Config {
@@ -117,11 +109,6 @@ export function loadConfig(): Config {
     logger.info("No JWT secret provided, generated secure random secret");
   }
 
-  const agentToken =
-    process.env.OVERLORD_AGENT_TOKEN ||
-    fileConfig.auth?.agentToken ||
-    DEFAULT_CONFIG.auth.agentToken;
-
   const keywordsEnv = process.env.OVERLORD_NOTIFICATION_KEYWORDS;
   const keywordsFromEnv = keywordsEnv
     ? keywordsEnv
@@ -130,13 +117,7 @@ export function loadConfig(): Config {
         .filter(Boolean)
     : [];
 
-  const finalAgentToken = agentToken || generateAgentToken();
-  
-  if (!agentToken) {
-    logger.info("No agent token provided, generated secure random token");
-  } else {
-    logger.info(`Using agent token from ${process.env.OVERLORD_AGENT_TOKEN ? 'environment' : 'config file'}`);
-  }
+  const finalAgentToken = "";
 
   configCache = {
     auth: {

@@ -25,7 +25,6 @@ var DefaultServerURLIsRaw = "false"
 var DefaultMutex = ""
 var DefaultID = ""
 var DefaultCountry = ""
-var DefaultAgentToken = ""
 
 const settingsFile = "config/settings.json"
 const serverIndexFile = "config/server_index.json"
@@ -52,7 +51,6 @@ type Config struct {
 	OS                    string
 	Arch                  string
 	Version               string
-	AgentToken            string
 	CaptureInterval       time.Duration
 	DisableCapture        bool
 	EnablePersistence     bool
@@ -128,13 +126,6 @@ func Load() Config {
 	tlsClientCert := strings.TrimSpace(os.Getenv("OVERLORD_TLS_CLIENT_CERT"))
 	tlsClientKey := strings.TrimSpace(os.Getenv("OVERLORD_TLS_CLIENT_KEY"))
 
-	agentToken := strings.TrimSpace(os.Getenv("OVERLORD_AGENT_TOKEN"))
-	tokenSource := "env"
-	if agentToken == "" {
-		agentToken = DefaultAgentToken
-		tokenSource = "build-time"
-	}
-
 	mutex := strings.TrimSpace(os.Getenv("OVERLORD_MUTEX"))
 	if mutex == "" {
 		mutex = DefaultMutex
@@ -142,12 +133,6 @@ func Load() Config {
 	mutexLower := strings.ToLower(strings.TrimSpace(mutex))
 	if mutexLower == "none" || mutexLower == "disabled" {
 		mutex = ""
-	}
-
-	if agentToken != "" {
-		log.Printf("[config] Agent token loaded from %s (len=%d)", tokenSource, len(agentToken))
-	} else {
-		log.Printf("[config] WARNING: No agent token configured (neither env nor build-time)")
 	}
 
 	return Config{
@@ -162,7 +147,6 @@ func Load() Config {
 		OS:                    runtime.GOOS,
 		Arch:                  runtime.GOARCH,
 		Version:               firstNonEmpty(fileSettings.Version, AgentVersion),
-		AgentToken:            agentToken,
 		CaptureInterval:       interval,
 		DisableCapture:        disableCapture,
 		TLSInsecureSkipVerify: tlsInsecureSkipVerify,

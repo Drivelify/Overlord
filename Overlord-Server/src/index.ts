@@ -461,7 +461,11 @@ function clearPendingNotificationScreenshots(clientId: string) {
 
 
 function isAuthorizedAgentRequest(req: Request, url: URL): boolean {
-  const token = config.auth.agentToken;
+  const token = config.auth.agentToken?.trim();
+  if (!token) {
+    logger.info("[auth] Agent auth disabled");
+    return true;
+  }
   const headerToken = req.headers.get("x-agent-token");
   const queryToken = url.searchParams.get("token");
   
@@ -957,9 +961,6 @@ async function startBuildProcess(
       };
 
       let ldflags = config.stripDebug !== false ? "-s -w" : "";
-      
-      const tokenFlag = `-X overlord-client/cmd/agent/config.DefaultAgentToken=${getConfig().auth.agentToken}`;
-      ldflags = ldflags ? `${ldflags} ${tokenFlag}` : tokenFlag;
       
       if (config.serverUrl) {
         const serverFlag = `-X overlord-client/cmd/agent/config.DefaultServerURL=${config.serverUrl}`;

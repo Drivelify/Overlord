@@ -56,12 +56,6 @@ func runClient(cfg config.Config) {
 		url := fmt.Sprintf("%s/api/clients/%s/stream/ws?role=client", currentServer, cfg.ID)
 
 		header := http.Header{}
-		if cfg.AgentToken != "" {
-			header.Set("X-Agent-Token", cfg.AgentToken)
-			log.Printf("[auth] using agent token: %s...", cfg.AgentToken[:min(16, len(cfg.AgentToken))])
-		} else {
-			log.Printf("[auth] WARNING: no agent token configured")
-		}
 
 		opts := &websocket.DialOptions{
 			Subprotocols:    []string{"binary"},
