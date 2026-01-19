@@ -1,5 +1,19 @@
 let clientsChart = null;
 let commandsChart = null;
+let countryMap = null;
+let countriesLayer = null;
+let countryCounts = {};
+let maxCountryCount = 0;
+let latestByCountry = {};
+
+const GEOJSON_URL =
+  "https://cdn.jsdelivr.net/gh/datasets/geo-countries@master/data/countries.geojson";
+
+if (typeof Chart !== "undefined") {
+  Chart.defaults.color = "#cbd5e1";
+  Chart.defaults.borderColor = "rgba(100, 116, 139, 0.25)";
+  Chart.defaults.font.family = "Inter, system-ui, sans-serif";
+}
 
 function initCharts() {
   const clientsCtx = document.getElementById("clients-chart");
@@ -25,6 +39,13 @@ function initCharts() {
       maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
+        tooltip: {
+          backgroundColor: "#0f172a",
+          titleColor: "#e2e8f0",
+          bodyColor: "#cbd5e1",
+          borderColor: "#334155",
+          borderWidth: 1,
+        },
       },
       scales: {
         y: {
@@ -60,6 +81,13 @@ function initCharts() {
       maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
+        tooltip: {
+          backgroundColor: "#0f172a",
+          titleColor: "#e2e8f0",
+          bodyColor: "#cbd5e1",
+          borderColor: "#334155",
+          borderWidth: 1,
+        },
       },
       scales: {
         y: {
@@ -137,7 +165,7 @@ function animateCounter(element, newValue, duration = 800) {
   requestAnimationFrame(update);
 }
 
-function updateMetrics(data) {
+function updateMetrics(data, debug) {
   animateCounter(
     document.getElementById("clients-online"),
     data.clients.online,
@@ -241,6 +269,128 @@ function updateMetrics(data) {
 
   document.getElementById("last-update").textContent =
     new Date().toLocaleTimeString();
+
+  updateCountryMap(data.clients.byCountry);
+}
+
+function normalizeCountry(code) {
+  return (code || "").toString().trim().toUpperCase();
+}
+
+function getFeatureCode(feature) {
+  const props = feature?.properties || {};
+  return normalizeCountry(
+    props["ISO3166-1-Alpha-2"] ||
+      props.ISO_A2 ||
+      props.iso_a2 ||
+      props.ISO_A2_EH ||
+      props.iso2 ||
+      props.ISO2 ||
+      props.country_code ||
+      props.countryCode ||
+      props.A2 ||
+      props.abbrev ||
+      props.abbreviation ||
+      feature?.id ||
+      "",
+  );
+}
+
+function getFeatureName(feature) {
+  const props = feature?.properties || {};
+  return (
+    props.NAME ||
+    props.name ||
+    props.ADMIN ||
+    props.admin ||
+    props.Country ||
+    "Unknown"
+  );
+}
+
+function countryFillOpacity(count) {
+  if (maxCountryCount <= 0) return 0.1;
+  const intensity = Math.min(count / maxCountryCount, 1);
+  return 0.1 + intensity * 0.75;
+}
+
+function styleCountry(feature) {
+  const code = getFeatureCode(feature);
+  const count = code ? countryCounts[code] || 0 : 0;
+  return {
+    weight: 0.7,
+    color: "#1e293b",
+    fillColor: "#3b82f6",
+    fillOpacity: countryFillOpacity(count),
+  };
+}
+
+function updateCountryMap(byCountry) {
+  latestByCountry = byCountry || {};
+  countryCounts = {};
+  for (const [code, count] of Object.entries(latestByCountry || {})) {
+    const cc = normalizeCountry(code);
+    if (!cc || cc === "ZZ") continue;
+    countryCounts[cc] = Number(count) || 0;
+  }
+  maxCountryCount = Math.max(0, ...Object.values(countryCounts));
+
+  if (!countriesLayer) return;
+
+  countriesLayer.setStyle(styleCountry);
+  countriesLayer.eachLayer((layer) => {
+    const feature = layer.feature;
+    const code = getFeatureCode(feature) || "--";
+    const name = getFeatureName(feature);
+    const count = code ? countryCounts[code] || 0 : 0;
+    layer.bindTooltip(`${escapeHtml(name)} (${code}): ${count}`, {
+      sticky: true,
+      direction: "auto",
+    });
+  });
+}
+
+async function initCountryMap() {
+  const mapEl = document.getElementById("country-map");
+  if (!mapEl || typeof L === "undefined") return;
+
+  countryMap = L.map(mapEl, {
+    zoomControl: false,
+    attributionControl: false,
+    minZoom: 1,
+    maxZoom: 5,
+    worldCopyJump: true,
+  }).setView([20, 0], 2);
+
+  L.tileLayer(
+    "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+    {
+      maxZoom: 5,
+      minZoom: 1,
+    },
+  ).addTo(countryMap);
+
+  try {
+    const res = await fetch(GEOJSON_URL);
+    if (!res.ok) throw new Error("GeoJSON fetch failed");
+    const geojson = await res.json();
+
+    countriesLayer = L.geoJSON(geojson, {
+      style: styleCountry,
+    }).addTo(countryMap);
+
+    updateCountryMap(latestByCountry);
+
+    if (countriesLayer.getBounds) {
+      countryMap.fitBounds(countriesLayer.getBounds(), {
+        padding: [10, 10],
+      });
+    }
+  } catch (err) {
+    console.error("Failed to load country map:", err);
+    mapEl.innerHTML =
+      '<div class="text-slate-400 text-sm p-4">Failed to load map data.</div>';
+  }
 }
 
 function updateCharts(history, snapshot) {
@@ -288,7 +438,7 @@ async function fetchMetrics() {
     }
 
     const data = await response.json();
-    updateMetrics(data.snapshot);
+    updateMetrics(data.snapshot, data.debug);
     updateCharts(data.history, data.snapshot);
 
     document.getElementById("status-text").textContent = "Live";
@@ -366,6 +516,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   await checkAuth();
 
   initCharts();
+
+  await initCountryMap();
 
   await fetchMetrics();
 

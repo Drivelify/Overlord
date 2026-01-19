@@ -54,7 +54,7 @@ const CORS_HEADERS = {
 
 
 const SECURITY_HEADERS = {
-  "Content-Security-Policy": "default-src 'self'; script-src 'self' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https://cdn.jsdelivr.net; font-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://fonts.gstatic.com; connect-src 'self' wss: ws: https://cdn.jsdelivr.net",
+  "Content-Security-Policy": "default-src 'self'; script-src 'self' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https://cdn.jsdelivr.net https://a.tile.openstreetmap.org https://b.tile.openstreetmap.org https://c.tile.openstreetmap.org https://tile.openstreetmap.org https://a.basemaps.cartocdn.com https://b.basemaps.cartocdn.com https://c.basemaps.cartocdn.com https://d.basemaps.cartocdn.com; font-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://fonts.gstatic.com; connect-src 'self' wss: ws: https://cdn.jsdelivr.net",
   "X-Content-Type-Options": "nosniff",
   "X-Frame-Options": "DENY",
   "X-XSS-Protection": "1; mode=block",
@@ -2426,15 +2426,24 @@ async function startServer() {
         
         const byOS: Record<string, number> = {};
         const byCountry: Record<string, number> = {};
+        const byOSOnline: Record<string, number> = {};
+        const byCountryOnline: Record<string, number> = {};
+        let onlineCounted = 0;
+        const totalItems = clientList.items.length;
         for (const item of clientList.items) {
-          
-          if (!item.online) continue;
-          
           if (item.os) {
             byOS[item.os] = (byOS[item.os] || 0) + 1;
           }
           if (item.country) {
             byCountry[item.country] = (byCountry[item.country] || 0) + 1;
+          }
+          if (!item.online) continue;
+          onlineCounted++;
+          if (item.os) {
+            byOSOnline[item.os] = (byOSOnline[item.os] || 0) + 1;
+          }
+          if (item.country) {
+            byCountryOnline[item.country] = (byCountryOnline[item.country] || 0) + 1;
           }
         }
         snapshot.clients.byOS = byOS;

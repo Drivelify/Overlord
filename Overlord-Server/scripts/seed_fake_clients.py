@@ -70,7 +70,7 @@ def random_version() -> str:
     return f"{random.randint(0, 5)}.{random.randint(0, 20)}.{random.randint(0, 9)}"
 
 
-def random_row(now_ms: int) -> Tuple:
+def random_row(now_ms: int, online_rate: float) -> Tuple:
     client_id = uuid.uuid4().hex
     hwid = uuid.uuid4().hex
     role = random.choice(ROLES)
@@ -82,7 +82,7 @@ def random_row(now_ms: int) -> Tuple:
     monitors = random.randint(1, 3)
     country = random.choice(COUNTRIES)
     last_seen = now_ms - random.randint(0, 7 * 24 * 60 * 60 * 1000)
-    online = random.choice([0, 1])
+    online = 1 if random.random() < online_rate else 0
     ping_ms = random.choice([None, random.randint(10, 400), random.randint(400, 2000)])
     return (
         client_id,
@@ -101,11 +101,13 @@ def random_row(now_ms: int) -> Tuple:
     )
 
 
-def batched_rows(count: int, batch_size: int = 500) -> Iterable[Tuple[Tuple, ...]]:
+def batched_rows(
+    count: int, batch_size: int = 500, online_rate: float = 0.6
+) -> Iterable[Tuple[Tuple, ...]]:
     now_ms = int(time.time() * 1000)
     batch = []
     for _ in range(count):
-        batch.append(random_row(now_ms))
+        batch.append(random_row(now_ms, online_rate))
         if len(batch) >= batch_size:
             yield tuple(batch)
             batch = []
@@ -117,7 +119,7 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
     conn.execute(SCHEMA)
 
 
-def seed(db_path: str, count: int, truncate: bool) -> None:
+def seed(db_path: str, count: int, truncate: bool, online_rate: float) -> None:
     conn = sqlite3.connect(db_path)
     try:
         ensure_schema(conn)
@@ -129,7 +131,7 @@ def seed(db_path: str, count: int, truncate: bool) -> None:
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         )
         total = 0
-        for batch in batched_rows(count):
+        for batch in batched_rows(count, online_rate=online_rate):
             conn.executemany(sql, batch)
             conn.commit()
             total += len(batch)
@@ -139,14 +141,20 @@ def seed(db_path: str, count: int, truncate: bool) -> None:
         conn.close()
 
 
+def resolve_default_db() -> str:
+    here = os.path.dirname(os.path.abspath(__file__))
+    repo_default = os.path.abspath(os.path.join(here, "..", "data", "overlord.db"))
+    return repo_default if os.path.exists(os.path.dirname(repo_default)) else "overlord.db"
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Seed fake clients into overlord.db for load testing."
     )
     parser.add_argument(
         "--db",
-        default="overlord.db",
-        help="Path to overlord.db (default: overlord.db in CWD)",
+        default=resolve_default_db(),
+        help="Path to overlord.db (default: Overlord-Server/data/overlord.db if present)",
     )
     parser.add_argument(
         "--count",
@@ -157,11 +165,17 @@ def main() -> None:
     parser.add_argument(
         "--truncate", action="store_true", help="Delete existing rows before seeding"
     )
+    parser.add_argument(
+        "--online-rate",
+        type=float,
+        default=0.6,
+        help="Probability a seeded client is online (0-1, default: 0.6)",
+    )
     args = parser.parse_args()
 
     db_path = os.path.abspath(args.db)
     print(f"Seeding {args.count} clients into {db_path} (truncate={args.truncate})")
-    seed(db_path, args.count, args.truncate)
+    seed(db_path, args.count, args.truncate, args.online_rate)
 
 
 if __name__ == "__main__":
