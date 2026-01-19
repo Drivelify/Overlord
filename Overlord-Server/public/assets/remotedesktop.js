@@ -210,7 +210,7 @@ import { encodeMsgpack, decodeMsgpack } from "./msgpack-helpers.js";
       const data = await res.json();
       const client = data.items.find((c) => c.id === activeClientId);
       if (client) {
-        clientLabel.textContent = `${client.host || client.id} (${client.os || ""})`;
+        clientLabel.textContent = `${client.customName || client.host || client.id} (${client.os || ""})`;
       }
       if (client && client.monitors) {
         populateDisplays(client.monitors);
