@@ -545,6 +545,44 @@ menu.addEventListener("click", async (e) => {
   }
   const action = target.dataset.action;
 
+  if (action === "rename") {
+    const card = document.querySelector(`article[data-id="${contextCard}"]`);
+    const client = state.data?.items?.find((c) => c.id === contextCard);
+    const currentName = client?.customName || client?.host || contextCard.substring(0, 8);
+    const newName = prompt(
+      `Rename agent:\n\nCurrent: ${currentName}\n\nEnter new name (leave empty to reset to hostname):`,
+      client?.customName || ""
+    );
+    
+    if (newName === null) {
+      closeMenu(clearContext);
+      return;
+    }
+    
+    try {
+      const res = await fetch(`/api/clients/${contextCard}/rename`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ customName: newName.trim() || null }),
+      });
+      
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "Failed to rename agent");
+        closeMenu(clearContext);
+        return;
+      }
+      
+      setTimeout(() => loadWithOptions({ force: true }), 200);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to rename agent");
+    }
+    
+    closeMenu(clearContext);
+    return;
+  }
+
   if (action === "uninstall") {
     if (
       !confirm(
