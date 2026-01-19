@@ -68,7 +68,7 @@ function connect() {
 
     switch (payload.type) {
       case "ready":
-        if (clientLabel) clientLabel.textContent = payload.clientId || "unknown";
+        if (clientLabel) clientLabel.textContent = payload.customName || payload.host || payload.clientId || "unknown";
         if (hostLabel) hostLabel.textContent = payload.host || "unknown";
         if (userLabel) userLabel.textContent = payload.user || "unknown";
         if (osLabel) osLabel.textContent = payload.os || "unknown";
