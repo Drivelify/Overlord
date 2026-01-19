@@ -16,6 +16,7 @@ export type ClientInfo = {
   monitors?: number;
   country?: string;
   pingMs?: number;
+  customName?: string;
 };
 
 export type ListFilters = {
