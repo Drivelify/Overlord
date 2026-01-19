@@ -156,6 +156,7 @@ function filterAndRenderClients() {
 
   filteredClients = allClients.filter(c => {
     const matchesSearch = !searchTerm || 
+      (c.customName && c.customName.toLowerCase().includes(searchTerm)) ||
       (c.host && c.host.toLowerCase().includes(searchTerm)) ||
       c.id.toLowerCase().includes(searchTerm) ||
       (c.os && c.os.toLowerCase().includes(searchTerm)) ||
@@ -176,7 +177,7 @@ function renderClients() {
   }
 
   clientList.innerHTML = filteredClients.map(c => {
-    const name = c.host || c.id.substring(0, 8);
+    const name = c.customName || c.host || c.id.substring(0, 8);
     const os = c.os || "unknown";
     const isSelected = selectedClients.has(c.id);
     
