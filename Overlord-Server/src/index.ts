@@ -3579,6 +3579,52 @@ async function startServer() {
         return Response.json({ ok: true, ip: targetIp });
       }
 
+      // Rename client
+      const renameMatch = url.pathname.match(/^\/api\/clients\/(.+)\/rename$/);
+      if (req.method === "POST" && renameMatch) {
+        const user = await authenticateRequest(req);
+        if (!user) return new Response("Unauthorized", { status: 401 });
+        try {
+          requirePermission(user, "clients:control");
+        } catch (error) {
+          if (error instanceof Response) return error;
+          return new Response("Forbidden", { status: 403 });
+        }
+
+        const targetId = renameMatch[1];
+        let customName: string | null = null;
+
+        try {
+          const body = await req.json();
+          const nameValue = body?.customName;
+          
+          if (nameValue && typeof nameValue === "string") {
+            customName = nameValue.trim().substring(0, 100); // Limit to 100 characters
+            if (customName === "") {
+              customName = null;
+            }
+          }
+        } catch {
+          return Response.json({ error: "Invalid request body" }, { status: 400 });
+        }
+
+        const { updateClientCustomName } = await import("./db");
+        updateClientCustomName(targetId, customName);
+
+        const ip = server.requestIP(req)?.address || "unknown";
+        logAudit({
+          timestamp: Date.now(),
+          username: user.username,
+          ip,
+          action: AuditAction.COMMAND,
+          targetClientId: targetId,
+          details: `Renamed client to "${customName || "(reset)"}"`,
+          success: true,
+        });
+
+        return Response.json({ ok: true, customName });
+      }
+
       // Request thumbnail generation for a specific client
       const thumbnailMatch = url.pathname.match(/^\/api\/clients\/(.+)\/thumbnail$/);
       if (req.method === "POST" && thumbnailMatch) {
